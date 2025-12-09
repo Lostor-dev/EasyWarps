@@ -1,0 +1,7 @@
+me\lostoryt\easyWarps\commands\WarpCommand.class
+me\lostoryt\easyWarps\commands\SetWarpCommand.class
+me\lostoryt\easyWarps\commands\DelSpawnCommand.class
+me\lostoryt\easyWarps\commands\SetSpawnCommand.class
+me\lostoryt\easyWarps\Main.class
+me\lostoryt\easyWarps\commands\DelWarpCommand.class
+me\lostoryt\easyWarps\commands\SpawnCommand.class

@@ -1,0 +1,30 @@
+name: EasyWarps
+version: '1.0'
+main: me.lostoryt.easyWarps.Main
+api-version: '1.21'
+commands:
+  setspawn:
+    description: This command set spawn in any location
+    usage: /<command>
+  spawn:
+    description: This command teleport player on spawn
+    usage: /<command>
+  delspawn:
+    description: This command delete spawn
+    usage: /<command>
+  setwarp:
+    description: This command set warp in any location
+    usage: /<command> <name>
+  warp:
+    description: This command teleport player to warp with his name
+    usage: /<command> <name>
+  delwarp:
+    description: This command delete warp with his name
+    usage: /<command> <name>
+permissions:
+  easywarps.setspawn:
+    description: Permission on command /setspawn
+    default: op
+  easywarps.delspawn:
+    description: Permission on command /delspawn
+    default: op
