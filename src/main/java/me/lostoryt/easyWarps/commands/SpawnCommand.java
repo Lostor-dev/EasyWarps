@@ -8,6 +8,9 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import java.util.List;
+import java.util.Random;
+
 public class SpawnCommand implements CommandExecutor {
 
     private final Main plugin;
@@ -19,19 +22,42 @@ public class SpawnCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender commandSender, Command command, String s, String[] strings) {
         if(!(commandSender instanceof Player)) return true;
-        if (strings.length != 0) return false;
 
         Player sender = (Player) commandSender;
 
         Location spawn = plugin.getLocation("spawn");
 
+
+        String spawnId = null;
+        if (spawnId != null) {
+            plugin.getSpawn(spawnId);
+            if (spawn == null) {
+                sender.sendMessage(ChatColor.RED + "§lСпавн" + spawnId + "не найден");
+                return true;
+            }
+        } else {
+            List<String> spawns = plugin.getAllSpawns();
+            if (spawns.isEmpty()) {
+                sender.sendMessage(ChatColor.RED + "§lСпавны не найдены");
+                return true;
+            }
+            Random random = new Random();
+            spawnId = spawns.get(random.nextInt(spawns.size()));
+            spawn = plugin.getSpawn(spawnId);
+        }
+
         if (spawn == null) {
-            sender.sendMessage(ChatColor.RED + "Спавн не найден");
+            sender.sendMessage(ChatColor.RED + "§lСпавн не найден");
             return true;
         }
 
         sender.teleport(spawn);
-        sender.sendMessage(ChatColor.GREEN + "Вы успешно телепортированны на спавн");
+        if (spawnId != null) {
+            sender.sendMessage(ChatColor.GREEN + "§lВы успешно телепортированны на спавн " + spawnId);
+        } else {
+            sender.sendMessage(ChatColor.GREEN + "§lВы успешно телепортированны на случайный спавн");
+        }
+
         return true;
     }
 }

@@ -23,15 +23,28 @@ public class WarpCommand implements CommandExecutor {
 
         Player sender = (Player) commandSender;
 
+
         String name = strings[0];
         if (name == null) {
-            sender.sendMessage(ChatColor.RED + "Вы ввели неправильное имя");
+            sender.sendMessage(ChatColor.RED + "§lВы ввели неправильное имя");
             return true;
         }
 
         Location warp = plugin.getLocation(name);
+
+        if (warp == null) {
+            sender.sendMessage(ChatColor.RED + "§lВарп с именем " + name + " не найден");
+            return true;
+        }
+
+        if (warp.getWorld() == null) {
+            sender.sendMessage(ChatColor.RED + "§lМир варпа не найден");
+            return true;
+        }
+
+
         sender.teleport(warp);
-        sender.sendMessage(ChatColor.GREEN + "Вы успешно телепортировались на варп " + name);
+        sender.sendMessage(ChatColor.GREEN + "§lВы успешно телепортировались на варп " + name);
 
         return true;
     }

@@ -7,6 +7,8 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import java.util.UUID;
+
 public class DelWarpCommand implements CommandExecutor {
 
     private final Main plugin;
@@ -24,18 +26,33 @@ public class DelWarpCommand implements CommandExecutor {
         String name = strings[0];
 
         if (name.equals("spawn")) {
-            sender.sendMessage(ChatColor.RED + "Спавн удалять нельзя");
+            sender.sendMessage(ChatColor.RED + "§lСпавн удалять нельзя");
             return true;
         }
 
         if (!sender.hasPermission("easywarps.delwarp")) {
-            sender.sendMessage(ChatColor.RED + "У вас недостаточно прав");
+            sender.sendMessage(ChatColor.RED + "§lУ вас недостаточно прав");
             return true;
         }
 
-        plugin.deleteLocation(name);
-        sender.sendMessage(ChatColor.GREEN + "Вы успешно удалили варп " + name);
+        if (!plugin.warpExist(name)) {
+            sender.sendMessage( ChatColor.RED + "§lВарп " + name + " не существует");
+            sender.sendMessage( ChatColor.YELLOW + "§lДоступные варпы: " + plugin.getWarpList());
+            return true;
+        }
 
-        return true;
+        UUID warpOwner = plugin.getWarpOwner(name);
+        if (warpOwner == null && warpOwner.equals(sender.getUniqueId())){
+            plugin.deleteLocation(name);
+            sender.sendMessage(ChatColor.GREEN + "§lВы успешно удалили варп " + name);
+            return true;
+        } else if (sender.isOp()) {
+            plugin.deleteLocation(name);
+            sender.sendMessage(ChatColor.GREEN + "§lВы успешно удалили варп " + name);
+            return true;
+        } else {
+            sender.sendMessage(ChatColor.RED + "§lВы не можете удалить чужой варп");
+            return true;
+        }
     }
 }

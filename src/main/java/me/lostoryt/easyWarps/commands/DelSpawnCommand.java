@@ -18,17 +18,21 @@ public class DelSpawnCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender commandSender, Command command, String s, String[] strings) {
         if (!(commandSender instanceof Player)) return true;
-        if (strings.length != 0) return false;
 
         Player sender = (Player) commandSender;
 
         if (!sender.hasPermission("easywarps.delspawn")) {
-            sender.sendMessage(ChatColor.RED + "У вас недостаточно прав");
+            sender.sendMessage(ChatColor.RED + "§lУ вас недостаточно прав");
             return true;
         }
 
-        plugin.deleteLocation("spawn");
-        sender.sendMessage(ChatColor.GREEN + "Вы успешно удалили спавн");
+        String spawnId = "default";
+        if (strings.length > 0) {
+            spawnId = strings[0];
+        }
+
+        plugin.deleteSpawn(spawnId);
+        sender.sendMessage(ChatColor.GREEN + "§lВы успешно удалили спавн " + spawnId);
 
         return true;
     }

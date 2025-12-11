@@ -18,13 +18,17 @@ public class SetSpawnCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender commandSender, Command command, String s, String[] strings) {
         if (!(commandSender instanceof Player)) return true;
-        if (strings.length !=0) return false;
 
         Player sender = (Player) commandSender;
 
         if (!sender.hasPermission("easywarps.setspawn")) {
-            sender.sendMessage(ChatColor.RED + "У вас недостаточно прав");
+            sender.sendMessage(ChatColor.RED + "§lУ вас недостаточно прав");
             return true;
+        }
+
+        String spawnId = "default";
+        if (strings.length > 0) {
+            spawnId = strings[0];
         }
 
         int x = (int) sender.getLocation().getX();
@@ -32,8 +36,9 @@ public class SetSpawnCommand implements CommandExecutor {
         int z = (int) sender.getLocation().getZ();
 
 
-        plugin.saveLocation("spawn", sender.getLocation());
-        sender.sendMessage(ChatColor.GREEN + "Вы установили спавн на координатах: " + ChatColor.YELLOW + " " + x  + " "+ y + " " + z);
+        plugin.saveSpawn(spawnId, sender.getLocation());
+        sender.sendMessage(ChatColor.GREEN + "§lВы установили спавн " + spawnId +
+                           " на координатах: " + ChatColor.YELLOW + " " + x  + " "+ y + " " + z);
 
         return true;
     }

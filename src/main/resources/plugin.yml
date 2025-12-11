@@ -5,13 +5,14 @@ api-version: '1.21'
 commands:
   setspawn:
     description: This command set spawn in any location
-    usage: /<command>
+    usage: /<command> [id]
   spawn:
     description: This command teleport player on spawn
-    usage: /<command>
+    usage: /<command> [id]
   delspawn:
     description: This command delete spawn
-    usage: /<command>
+    usage: /<command> [id]
+
   setwarp:
     description: This command set warp in any location
     usage: /<command> <name>
@@ -21,10 +22,30 @@ commands:
   delwarp:
     description: This command delete warp with his name
     usage: /<command> <name>
+  warps:
+    description: This command open warps gui
+    usage: /<command>
+
 permissions:
   easywarps.setspawn:
     description: Permission on command /setspawn
     default: op
+  easywarps.spawn:
+    description: Permission on command /spawn
+    default: true
   easywarps.delspawn:
     description: Permission on command /delspawn
     default: op
+
+  easywarps.setwarp:
+    description: Permission on command /setwarp
+    default: true
+  easywarps.warp:
+    description: Permission on command /warp
+    default: true
+  easywarps.delwarp:
+    description: Permission on command /delwarp
+    default: op
+  easywarps.warps:
+    description: Permission on command /warps
+    default: true
