@@ -1,0 +1,81 @@
+# ====================================
+# Общие настройки GUI
+# ====================================
+gui:
+  # {page} - текущая страница, {total} - всего страниц
+  title: "&1&lМеню Варпов &7({page}/{total})"
+  size: 54
+  fill-item: GRAY_STAINED_GLASS_PANE
+
+# ====================================
+# Настройки кнопок
+# ====================================
+buttons:
+  # Кнопка закрытия
+  close:
+    slot: 49
+    material: BARRIER
+    name: "&c&l✖ Закрыть"
+
+  # Кнопка Мои Варпы
+  my-warps:
+    slot: 48
+    material: ENDER_PEARL
+    name: "&e&l⭐ Мои варпы ({count})" # {count} - количество варпов игрока
+
+  # Кнопка переключения фильтров
+  filter-toggle:
+    slot: 50
+    material: COMPASS
+    name: "&b&l⚙ Текущий фильтр: &f{filter}" # {filter} - текущее название фильтра
+
+    # Кнопка Предыдущая страница
+  prev-page:
+    slot: 45 # Позиция
+    material: ARROW
+    name: "&a◀ Предыдущая страница"
+
+    # Кнопка Следующая страница
+  next-page:
+    slot: 53 # Позиция
+    material: ARROW
+    name: "&aСледующая страница ▶"
+
+
+# ====================================
+# Настройки отображения варпов
+# ====================================
+warp-items:
+  # Цвета названий (используйте стандартные имена Bukkit ChatColor, например, GREEN, GOLD, LIGHT_PURPLE)
+  name-public-color: GREEN
+  name-server-color: GOLD
+  name-spawn-color: LIGHT_PURPLE
+
+  # Материалы по умолчанию (используйте стандартные имена Bukkit Material)
+  default-public-material: COMPASS
+  default-server-material: BOOK
+  default-spawn-material: BEACON
+
+  # Маппинг иконок: Ключевое слово в warpName (например, 'shop' в 'MySecretShop'): МАТЕРИАЛ
+  material-icons:
+    shop: EMERALD
+    mine: IRON_PICKAXE
+    pvp: DIAMOND_SWORD
+    home: OAK_DOOR
+
+# ====================================
+# Сообщения
+# ====================================
+messages:
+  prefix: "&7[&bEasyWarps&7] "
+  # Сообщения для Lore
+  lore:
+    warp-type-public: "&9Публичный варп"
+    warp-type-server: "&cСерверный варп"
+    owner-line: "&7Владелец: &f{owner}" # {owner} - имя владельца
+    teleport-hint: "&eЛКМ - телепортироваться"
+    delete-hint: "&cПКМ - удалить варп"
+
+  # Сообщения для игрока
+  teleported: "&aВы телепортировались на &f{name}&a." # {name} - отображаемое имя варпа
+  no-permission: "&cУ вас недостаточно прав."

@@ -10,11 +10,22 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
+import java.util.Arrays; // Добавим для удобства
 import java.util.List;
+import java.util.stream.Collectors; // Добавим для фильтрации
 
 public class WarpsCommand implements CommandExecutor, TabCompleter {
 
     private final Main plugin;
+    // Список доступных фильтров для Tab Completer и проверки
+    private static final List<String> VALID_FILTERS = Arrays.asList(
+            "all", "my", "spawns", "server", "public",
+            "все", "мои", "спавны", "серверные", "публичные"
+    );
+    private static final List<String> ENGLISH_FILTERS = Arrays.asList(
+            "all", "my", "spawns", "server", "public"
+    );
+
 
     public WarpsCommand(Main plugin) {
         this.plugin = plugin;
@@ -34,37 +45,46 @@ public class WarpsCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        String filter = "all";
+        String filter = "all"; // Фильтр по умолчанию
+
         if (args.length > 0) {
-            switch (args[0].toLowerCase()) {
+            String arg = args[0].toLowerCase();
+            String determinedFilter = null;
+
+            switch (arg) {
                 case "my":
                 case "мои":
-                    filter = "my";
+                    determinedFilter = "my";
                     break;
                 case "spawns":
                 case "спавны":
-                    filter = "spawns";
+                    determinedFilter = "spawns";
                     break;
                 case "server":
                 case "серверные":
-                    filter = "server";
+                    determinedFilter = "server";
                     break;
                 case "public":
                 case "публичные":
-                    filter = "public";
+                    determinedFilter = "public";
                     break;
                 case "all":
                 case "все":
-                    filter = "all";
+                    determinedFilter = "all";
                     break;
-                default:
-                    player.sendMessage(ChatColor.RED + "§lНеизвестный фильтр!");
-                    player.sendMessage(ChatColor.YELLOW + "Доступные фильтры: all, my, spawns, server, public");
-                    return true;
             }
+
+            if (determinedFilter == null) {
+                player.sendMessage(ChatColor.RED + "§lНеизвестный фильтр!");
+                player.sendMessage(ChatColor.YELLOW + "Доступные фильтры: all, my, spawns, server, public (или русские аналоги)");
+                return true;
+            }
+            // Переменная 'filter' получает корректное английское значение для передачи в WarpGui
+            filter = determinedFilter;
         }
 
-        WarpGui gui = new WarpGui(plugin, player, 1, "all");
+        // ИСПРАВЛЕНИЕ: Используем переменную 'filter' вместо жестко заданного "all"
+        WarpGui gui = new WarpGui(plugin, player, 1, filter);
         gui.open();
 
         return true;
@@ -72,16 +92,15 @@ public class WarpsCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        List<String> completions = new ArrayList<>();
-
         if (args.length == 1) {
-            completions.add("all");
-            completions.add("my");
-            completions.add("spawns");
-            completions.add("server");
-            completions.add("public");
+            String partial = args[0].toLowerCase();
+
+            // Фильтруем только английские названия для передачи в систему.
+            return ENGLISH_FILTERS.stream()
+                    .filter(f -> f.startsWith(partial))
+                    .collect(Collectors.toList());
         }
 
-        return completions;
+        return new ArrayList<>();
     }
 }

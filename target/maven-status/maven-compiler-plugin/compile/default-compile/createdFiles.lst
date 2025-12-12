@@ -1,10 +1,11 @@
-me\lostoryt\easyWarps\commands\WarpCommand.class
-me\lostoryt\easyWarps\commands\WarpsCommand.class
-me\lostoryt\easyWarps\gui\WarpGui.class
 me\lostoryt\easyWarps\commands\SetWarpCommand.class
 me\lostoryt\easyWarps\commands\DelSpawnCommand.class
 me\lostoryt\easyWarps\commands\SetSpawnCommand.class
 me\lostoryt\easyWarps\Main.class
+me\lostoryt\easyWarps\commands\SpawnCommand.class
+me\lostoryt\easyWarps\completer\WarpTabCompleter.class
+me\lostoryt\easyWarps\commands\WarpCommand.class
+me\lostoryt\easyWarps\commands\WarpsCommand.class
+me\lostoryt\easyWarps\gui\WarpGui.class
 me\lostoryt\easyWarps\commands\DelWarpCommand.class
 me\lostoryt\easyWarps\listeners\GUIListener.class
-me\lostoryt\easyWarps\commands\SpawnCommand.class

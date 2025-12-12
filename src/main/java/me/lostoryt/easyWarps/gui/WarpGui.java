@@ -25,7 +25,6 @@ public class WarpGui implements InventoryHolder {
     public static final int MODEL_ID_CLOSE = 1001;
     public static final int MODEL_ID_PREV_PAGE = 1002;
     public static final int MODEL_ID_NEXT_PAGE = 1003;
-    public static final int MODEL_ID_INFO = 1004;
     public static final int MODEL_ID_FILTER_TOGGLE = 1005;
     public static final int MODEL_ID_MY_WARPS = 1006;
 
@@ -35,6 +34,23 @@ public class WarpGui implements InventoryHolder {
         this.page = page;
         this.currentFilter = filter;
         createInventory();
+    }
+
+    @Override
+    public Inventory getInventory() {
+        return inventory;
+    }
+
+    public Player getPlayer() {
+        return player;
+    }
+
+    public int getPage() {
+        return page;
+    }
+
+    public String getFilter() {
+        return currentFilter;
     }
 
     private void createInventory() {
@@ -63,20 +79,40 @@ public class WarpGui implements InventoryHolder {
         int totalPages = Math.max(1, (int) Math.ceil((double) warps.size() / itemsPerPage));
         int currentPage = Math.min(page, totalPages);
 
-        String title = "Варпы";
-        if (currentFilter.equals("spawns")) title = "Спауны";
-        else if (currentFilter.equals("server")) title = "Серверные варпы";
-        else if (currentFilter.equals("public")) title = "Публичные варпы";
-        else if (currentFilter.equals("my")) title = "Мои варпы";
+        String title = plugin.getConfigString("gui.title");
+
+        // Подстановка плейсхолдеров в заголовок
+        title = title.replace("{page}", String.valueOf(currentPage))
+                .replace("{total}", String.valueOf(totalPages));
 
         inventory = Bukkit.createInventory(
                 this,
-                54,
-                ChatColor.DARK_BLUE + "§l" + title + " §7(" + currentPage + "/" + totalPages + ")"
+                plugin.getConfigInt("gui.size", 54),
+                title
         );
 
         fillWarps(warps, currentPage, itemsPerPage);
         addNavigationButtons(totalPages, currentPage);
+        // Заполнение оставшегося пространства
+        fillEmptySlots();
+    }
+
+    private void fillEmptySlots() {
+        Material material = Material.getMaterial(plugin.getConfigString("gui.fill-item"));
+        if (material == null) material = Material.GRAY_STAINED_GLASS_PANE; // Запасной вариант
+
+        ItemStack fillItem = new ItemStack(material);
+        ItemMeta meta = fillItem.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(ChatColor.DARK_GRAY + " ");
+            fillItem.setItemMeta(meta);
+        }
+
+        for (int i = 0; i < inventory.getSize(); i++) {
+            if (inventory.getItem(i) == null || inventory.getItem(i).getType() == Material.AIR) {
+                inventory.setItem(i, fillItem);
+            }
+        }
     }
 
     private ItemStack setCustomModelData(ItemStack item, int modelId) {
@@ -120,6 +156,7 @@ public class WarpGui implements InventoryHolder {
         UUID playerUUID = player.getUniqueId();
 
         for (String warp : allWarps) {
+
             boolean isSpawn = plugin.isSpawnName(warp);
             String type = plugin.getWarpType(warp);
             UUID ownerUUID = plugin.getWarpOwner(warp);
@@ -171,32 +208,29 @@ public class WarpGui implements InventoryHolder {
             }
 
             String warpType = plugin.getWarpType(warpName);
-            Material material = Material.COMPASS;
-            if (warpType.equals("server")) {
-                material = Material.BOOK;
-            }
-
-            String lowerName = warpName.toLowerCase();
-            if (lowerName.contains("дом") || lowerName.contains("home")) material = Material.OAK_DOOR;
-            else if (lowerName.contains("магазин") || lowerName.contains("shop")) material = Material.EMERALD;
-            else if (lowerName.contains("шахта") || lowerName.contains("mine")) material = Material.IRON_PICKAXE;
-            else if (lowerName.contains("пвп") || lowerName.contains("pvp")) material = Material.DIAMOND_SWORD;
+            Material material = getWarpMaterial(warpName, warpType);
 
             ItemStack item = new ItemStack(material);
             ItemMeta meta = item.getItemMeta();
 
-            ChatColor nameColor = warpType.equals("server") ? ChatColor.GOLD : ChatColor.GREEN;
+            net.md_5.bungee.api.ChatColor nameColor = warpType.equals("server")
+                    ? plugin.getConfigColor("warp-items.name-server-color")
+                    : plugin.getConfigColor("warp-items.name-public-color");
+
             meta.setDisplayName(nameColor + "§l" + displayName);
 
             List<String> lore = new ArrayList<>();
-            lore.add(warpType.equals("server") ? ChatColor.RED + "Серверный варп" : ChatColor.BLUE + "Публичный варп");
+            // Тип варпа
+            lore.add(warpType.equals("server")
+                    ? plugin.getConfigString("messages.lore.warp-type-server")
+                    : plugin.getConfigString("messages.lore.warp-type-public"));
 
             UUID ownerUUID = plugin.getWarpOwner(warpName);
             if (ownerUUID != null) {
                 String ownerName = plugin.getOwnerName(ownerUUID);
-                lore.add(ChatColor.GRAY + "Владелец: " + ChatColor.WHITE + ownerName);
+                lore.add(plugin.getConfigString("messages.lore.owner-line").replace("{owner}", ownerName));
             } else if (warpType.equals("server")) {
-                lore.add(ChatColor.GRAY + "Владелец: " + ChatColor.WHITE + "Сервер");
+                lore.add(plugin.getConfigString("messages.lore.owner-line").replace("{owner}", "Сервер"));
             }
 
             org.bukkit.Location loc = plugin.getLocation(warpName);
@@ -210,7 +244,7 @@ public class WarpGui implements InventoryHolder {
             }
 
             lore.add("");
-            lore.add(ChatColor.YELLOW + "ЛКМ - телепортироваться");
+            lore.add(plugin.getConfigString("messages.lore.teleport-hint"));
 
             boolean canDelete = false;
             if (player.hasPermission("easywarps.delwarp")) {
@@ -224,7 +258,7 @@ public class WarpGui implements InventoryHolder {
             }
 
             if (canDelete) {
-                lore.add(ChatColor.RED + "ПКМ - удалить варп");
+                lore.add(plugin.getConfigString("messages.lore.delete-hint"));
             }
 
             meta.setLore(lore);
@@ -241,12 +275,40 @@ public class WarpGui implements InventoryHolder {
         }
     }
 
+    public void open() {
+        player.openInventory(inventory);
+    }
+
+    private Material getWarpMaterial(String warpName, String warpType) {
+        String lowerName = warpName.toLowerCase();
+        Map<String, String> iconMap = plugin.getMaterialIcons();
+        for (Map.Entry<String, String> entry : iconMap.entrySet()) {
+            if (lowerName.contains(entry.getKey())) {
+                Material customMat = Material.getMaterial(entry.getValue());
+                if (customMat != null) return customMat;
+            }
+        }
+
+        String materialName;
+        if (warpType.equals("server")) {
+            materialName = plugin.getConfigString("warp-items.default-server-material");
+        } else {
+            materialName = plugin.getConfigString("warp-items.default-public-material");
+        }
+
+        Material defaultMat = Material.getMaterial(materialName);
+        return defaultMat != null ? defaultMat : Material.COMPASS;
+    }
+
     private ItemStack createSpawnItem(String warpName, String displayName) {
-        Material material = Material.BEACON;
+        Material material = Material.getMaterial(plugin.getConfigString("warp-items.default-spawn-material"));
+        if (material == null) material = Material.BEACON;
+
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName(ChatColor.LIGHT_PURPLE + "§l" + displayName);
+        net.md_5.bungee.api.ChatColor nameColor = plugin.getConfigColor("warp-items.name-spawn-color");
+        meta.setDisplayName(nameColor + "§l" + displayName);
 
         List<String> lore = new ArrayList<>();
         lore.add(ChatColor.DARK_PURPLE + "⚡ Спаун сервера");
@@ -269,10 +331,10 @@ public class WarpGui implements InventoryHolder {
         }
 
         lore.add("");
-        lore.add(ChatColor.YELLOW + "ЛКМ - телепортироваться");
+        lore.add(plugin.getConfigString("messages.lore.teleport-hint"));
 
         if (player.isOp()) {
-            lore.add(ChatColor.RED + "ПКМ - удалить спаун");
+            lore.add(plugin.getConfigString("messages.lore.delete-hint"));
         }
 
         meta.setLore(lore);
@@ -286,19 +348,21 @@ public class WarpGui implements InventoryHolder {
 
     private void addNavigationButtons(int totalPages, int currentPage) {
 
-        // --- ОБНОВЛЕННЫЕ СЛОТЫ ---
-        int backSlot = 45;
-        int myWarpsSlot = 48; // Перемещено из 47 в 48
-        int closeSlot = 49;
-        int filterToggleSlot = 50;
-        int nextSlot = 53;
-        // ------------------------
+        // Получаем слоты из конфига, используя значения по умолчанию, если не найдены
+        int backSlot = plugin.getConfigInt("buttons.prev-page.slot", 45);
+        int myWarpsSlot = plugin.getConfigInt("buttons.my-warps.slot", 48);
+        int closeSlot = plugin.getConfigInt("buttons.close.slot", 49);
+        int filterToggleSlot = plugin.getConfigInt("buttons.filter-toggle.slot", 50);
+        int nextSlot = plugin.getConfigInt("buttons.next-page.slot", 53);
 
-        // Кнопка Назад
+        // --- Кнопка Назад ---
         if (currentPage > 1) {
-            ItemStack backButton = new ItemStack(Material.ARROW);
+            Material material = Material.getMaterial(plugin.getConfigString("buttons.prev-page.material"));
+            if (material == null) material = Material.ARROW;
+
+            ItemStack backButton = new ItemStack(material); // Строка 213 (была 213)
             ItemMeta backMeta = backButton.getItemMeta();
-            backMeta.setDisplayName(ChatColor.GREEN + "◀ Предыдущая страница");
+            backMeta.setDisplayName(plugin.getConfigString("buttons.prev-page.name")); // Строка 215 (была 215)
             backButton.setItemMeta(backMeta);
             setCustomModelData(backButton, MODEL_ID_PREV_PAGE);
             inventory.setItem(backSlot, backButton);
@@ -310,35 +374,46 @@ public class WarpGui implements InventoryHolder {
             inventory.setItem(backSlot, inactiveBack);
         }
 
-        // КНОПКА: МОИ ВАРПЫ (Слот 48)
-        ItemStack myWarpsButton = new ItemStack(Material.ENDER_PEARL);
+        // --- КНОПКА: МОИ ВАРПЫ (Слот 48) ---
+        Material myWarpsMat = Material.getMaterial(plugin.getConfigString("buttons.my-warps.material"));
+        if (myWarpsMat == null) myWarpsMat = Material.ENDER_PEARL;
+
+        ItemStack myWarpsButton = new ItemStack(myWarpsMat);
         ItemMeta myWarpsMeta = myWarpsButton.getItemMeta();
-        // Считаем варпы, созданные игроком
-        long myWarpsCount = getFilteredWarps().stream()
+        long myWarpsCount = plugin.getAllWarpsForGUI().stream()
                 .filter(w -> !plugin.isSpawnName(w) && plugin.getWarpOwner(w) != null && plugin.getWarpOwner(w).equals(player.getUniqueId()))
                 .count();
 
-        myWarpsMeta.setDisplayName(ChatColor.YELLOW + "⭐ §lМои варпы (" + myWarpsCount + ")");
+        String myWarpsName = plugin.getConfigString("buttons.my-warps.name").replace("{count}", String.valueOf(myWarpsCount));
+        myWarpsMeta.setDisplayName(myWarpsName);
         myWarpsMeta.setLore(Collections.singletonList(ChatColor.GRAY + "Показать только варпы, созданные вами."));
         myWarpsButton.setItemMeta(myWarpsMeta);
         setCustomModelData(myWarpsButton, MODEL_ID_MY_WARPS);
         inventory.setItem(myWarpsSlot, myWarpsButton);
 
-        // Кнопка Закрыть
-        ItemStack closeButton = new ItemStack(Material.BARRIER);
+        // --- Кнопка Закрыть (Слот 49) ---
+        Material closeMat = Material.getMaterial(plugin.getConfigString("buttons.close.material"));
+        if (closeMat == null) closeMat = Material.BARRIER;
+
+        ItemStack closeButton = new ItemStack(closeMat);
         ItemMeta closeMeta = closeButton.getItemMeta();
-        closeMeta.setDisplayName(ChatColor.RED + "✖ §lЗакрыть");
+        closeMeta.setDisplayName(plugin.getConfigString("buttons.close.name"));
         closeButton.setItemMeta(closeMeta);
         setCustomModelData(closeButton, MODEL_ID_CLOSE);
         inventory.setItem(closeSlot, closeButton);
 
-        // КНОПКА: ПЕРЕКЛЮЧАТЕЛЬ ФИЛЬТРОВ (Слот 50)
-        ItemStack filterButton = new ItemStack(Material.COMPASS);
+        // --- КНОПКА: ПЕРЕКЛЮЧАТЕЛЬ ФИЛЬТРОВ (Слот 50) ---
+        Material filterMat = Material.getMaterial(plugin.getConfigString("buttons.filter-toggle.material")); // Строка 306 (была 306)
+        if (filterMat == null) filterMat = Material.COMPASS;
+
+        ItemStack filterButton = new ItemStack(filterMat);
         ItemMeta filterMeta = filterButton.getItemMeta();
 
-        filterMeta.setDisplayName(ChatColor.AQUA + "⚙ §lТекущий фильтр: " + ChatColor.WHITE + currentFilter.toUpperCase());
+        String filterName = currentFilter.equals("all") ? "Все" : currentFilter.substring(0, 1).toUpperCase() + currentFilter.substring(1);
+        String filterToggleName = plugin.getConfigString("buttons.filter-toggle.name").replace("{filter}", filterName);
 
-        // Список фильтров для Lore
+        filterMeta.setDisplayName(filterToggleName);
+
         List<String> filterLore = new ArrayList<>();
         filterLore.add(ChatColor.GRAY + "ЛКМ: Сбросить фильтр");
         filterLore.add(ChatColor.YELLOW + "ПКМ: Переключить тип");
@@ -360,11 +435,14 @@ public class WarpGui implements InventoryHolder {
         setCustomModelData(filterButton, MODEL_ID_FILTER_TOGGLE);
         inventory.setItem(filterToggleSlot, filterButton);
 
-        // Кнопка Вперед
+        // --- Кнопка Вперед ---
         if (currentPage < totalPages) {
-            ItemStack nextButton = new ItemStack(Material.ARROW);
+            Material material = Material.getMaterial(plugin.getConfigString("buttons.next-page.material"));
+            if (material == null) material = Material.ARROW;
+
+            ItemStack nextButton = new ItemStack(material);
             ItemMeta nextMeta = nextButton.getItemMeta();
-            nextMeta.setDisplayName(ChatColor.GREEN + "Следующая страница ▶");
+            nextMeta.setDisplayName(plugin.getConfigString("buttons.next-page.name"));
             nextButton.setItemMeta(nextMeta);
             setCustomModelData(nextButton, MODEL_ID_NEXT_PAGE);
             inventory.setItem(nextSlot, nextButton);
@@ -375,26 +453,5 @@ public class WarpGui implements InventoryHolder {
             inactiveNext.setItemMeta(inactiveMeta);
             inventory.setItem(nextSlot, inactiveNext);
         }
-    }
-
-    @Override
-    public Inventory getInventory() {
-        return inventory;
-    }
-
-    public void open() {
-        player.openInventory(inventory);
-    }
-
-    public Player getPlayer() {
-        return player;
-    }
-
-    public int getPage() {
-        return page;
-    }
-
-    public String getFilter() {
-        return currentFilter;
     }
 }

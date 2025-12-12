@@ -103,11 +103,9 @@ public class GUIListener implements Listener {
                 }
             }
 
-            // Циклически переключаем на следующий фильтр
             int nextIndex = (currentIndex + 1) % filterCycle.length;
             newFilter = filterCycle[nextIndex];
         } else {
-            // ЛКМ сбрасывает на "all"
             newFilter = "all";
         }
 
@@ -119,7 +117,9 @@ public class GUIListener implements Listener {
 
         String type = plugin.getWarpType(warpId);
         if ("server".equals(type) && !player.isOp()) {
-            player.sendMessage(ChatColor.RED + "У вас нет доступа к серверным варпам.");
+            String noPerm = plugin.getConfigString("messages.no-permission");
+            String prefix = plugin.getConfigString("messages.prefix");
+            player.sendMessage(prefix + noPerm);
             return;
         }
 
@@ -127,10 +127,13 @@ public class GUIListener implements Listener {
         if (loc != null) {
             player.closeInventory();
             player.teleport(loc);
-            player.sendMessage(ChatColor.GREEN + "Телепортация на " + displayName + "!");
+            String message = plugin.getConfigString("messages.teleported").replace("{name}", displayName);
+            String prefix = plugin.getConfigString("messages.prefix");
+            player.sendMessage(prefix + message);
             player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 1f);
         } else {
-            player.sendMessage(ChatColor.RED + "Ошибка: локация варпа не найдена.");
+            // Ошибка локации не найдена (не настраивается через конфиг)
+            player.sendMessage(plugin.getConfigString("messages.prefix") + ChatColor.RED + "Ошибка: локация варпа не найдена.");
         }
     }
 
@@ -161,13 +164,16 @@ public class GUIListener implements Listener {
                 plugin.deleteLocation(warpId);
             }
 
-            player.sendMessage(ChatColor.GREEN + "Варп " + displayName + " удален.");
+            player.sendMessage(plugin.getConfigString("messages.prefix") + ChatColor.GREEN + "Варп " + displayName + " удален.");
             player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_BREAK, 1f, 1f);
 
             new WarpGui(plugin, player, gui.getPage(), gui.getFilter()).open();
         } else {
-            player.sendMessage(ChatColor.RED + "У вас нет прав на удаление этого варпа.");
+            String noPerm = plugin.getConfigString("messages.no-permission");
+            String prefix = plugin.getConfigString("messages.prefix");
+            player.sendMessage(prefix + noPerm);
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1f, 1f);
         }
     }
+
 }

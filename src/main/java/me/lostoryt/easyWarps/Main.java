@@ -1,25 +1,34 @@
 package me.lostoryt.easyWarps;
 
 import me.lostoryt.easyWarps.commands.*;
+import me.lostoryt.easyWarps.completer.WarpTabCompleter;
 import me.lostoryt.easyWarps.listeners.GUIListener;
+import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
 
 public final class Main extends JavaPlugin {
+
+    private File warpsFile;
+    private FileConfiguration warpsConfig;
 
     @Override
     public void onEnable() {
         // Plugin startup logic
         getServer().getLogger().info("Plugin EasyWarps enabled");
+        this.saveDefaultConfig();
+
+        setupWarpsConfig();
 
         getServer().getPluginManager().registerEvents(new GUIListener(this), this);
 
@@ -27,13 +36,35 @@ public final class Main extends JavaPlugin {
         getCommand("spawn").setExecutor(new SpawnCommand(this));
         getCommand("delspawn").setExecutor(new DelSpawnCommand(this));
         getCommand("setwarp").setExecutor(new SetWarpCommand(this));
+
         getCommand("warp").setExecutor(new WarpCommand(this));
+        getCommand("warp").setTabCompleter(new WarpTabCompleter(this));
+
         getCommand("delwarp").setExecutor(new DelWarpCommand(this));
         getCommand("warps").setExecutor(new WarpsCommand(this));
     }
 
+    private void setupWarpsConfig() {
+        warpsFile = new File(getDataFolder(), "warps.yml");
+
+        if (!warpsFile.exists()) {
+            try {
+                warpsFile.createNewFile();
+            } catch (IOException e) {
+                getLogger().severe("Не удалось создать warps.yml!");
+                e.printStackTrace();
+            }
+        }
+        warpsConfig = YamlConfiguration.loadConfiguration(warpsFile);
+    }
+
+    public FileConfiguration getWarpsConfig() {
+        return this.warpsConfig;
+    }
+
+
     public void saveLocation(String name, Location loc, String type, UUID owner) {
-        YamlConfiguration config = (YamlConfiguration) this.getConfig();
+        YamlConfiguration config = (YamlConfiguration) getWarpsConfig();
         config.set("warps." + name + ".world", loc.getWorld().getName());
         config.set("warps." + name + ".x", loc.getX());
         config.set("warps." + name + ".y", loc.getY());
@@ -46,11 +77,11 @@ public final class Main extends JavaPlugin {
         } else{
             config.set("warps." + name + ".owner", "server");
         }
-        saveConfig();
+        saveWarpsConfig();
     }
 
     public Location getSpawn(String number) {
-        YamlConfiguration config = (YamlConfiguration) this.getConfig();
+        YamlConfiguration config = (YamlConfiguration) getWarpsConfig();
 
         if (number == null || number.isEmpty() || number.equals("default")) {
             number = "default";
@@ -70,19 +101,59 @@ public final class Main extends JavaPlugin {
         return new Location(getServer().getWorld(world), x, y, z, yaw, pitch);
     }
 
+    public String getConfigString(String path) {
+        String s = this.getConfig().getString(path);
+        if (s == null) return "";
+        return ChatColor.translateAlternateColorCodes('&', s);
+    }
+
+    public Map<String, String> getMaterialIcons() {
+        Map<String, String> icons = new LinkedHashMap<>();
+        FileConfiguration config = this.getConfig();
+
+        if (config.isConfigurationSection("warp-items.material-icons")) {
+            for (String key : config.getConfigurationSection("warp-items.material-icons").getKeys(false)) {
+                icons.put(key.toLowerCase(), config.getString("warp-items.material-icons." + key));
+            }
+        }
+        return icons;
+    }
+
+    public void saveWarpsConfig() {
+        try {
+            getWarpsConfig().save(warpsFile);
+        } catch (IOException e) {
+            getLogger().severe("Не удалось сохранить warps.yml!");
+        }
+    }
+
+    public ChatColor getConfigColor(String path) {
+        String colorName = this.getConfig().getString(path);
+        try {
+            return ChatColor.valueOf(colorName.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            getLogger().warning("Invalid ChatColor specified in config at: " + path + ". Defaulting to WHITE.");
+            return ChatColor.WHITE;
+        }
+    }
+
+    public int getConfigInt(String path, int defaultValue) {
+        return this.getConfig().getInt(path, defaultValue);
+    }
+
     public void deleteSpawn(String number) {
-        YamlConfiguration config = (YamlConfiguration) this.getConfig();
+        YamlConfiguration config = (YamlConfiguration) getWarpsConfig();
 
         if (number == null || number.isEmpty() || number.equals("default")) {
             number = "default";
         }
 
         config.set("spawns." + number, null);
-        saveConfig();
+        saveWarpsConfig();
     }
 
     public void saveSpawn(String number, Location loc) {
-        YamlConfiguration config = (YamlConfiguration) this.getConfig();
+        YamlConfiguration config = (YamlConfiguration) this.getWarpsConfig();
 
         if (number == null || number.isEmpty() || number.equals("default")) {
             number = "default";
@@ -95,11 +166,18 @@ public final class Main extends JavaPlugin {
         config.set("spawns." + number + ".yaw", loc.getYaw());
         config.set("spawns." + number + ".pitch", loc.getPitch());
 
-        saveConfig();
+        saveWarpsConfig();
+    }
+
+    public List<String> getAllWarpsExcludingSpawns() {
+        if (getWarpsConfig().isConfigurationSection("warps")) {
+            return new ArrayList<>(getWarpsConfig().getConfigurationSection("warps").getKeys(false));
+        }
+        return Collections.emptyList();
     }
 
     public List<String> getAllSpawns() {
-        YamlConfiguration config = (YamlConfiguration) getConfig();
+        YamlConfiguration config = (YamlConfiguration) getWarpsConfig();
         List<String> spawns = new ArrayList<>();
 
         if (!config.contains("spawns")) {
@@ -145,7 +223,7 @@ public final class Main extends JavaPlugin {
             return null;
         }
 
-        YamlConfiguration config = (YamlConfiguration) getConfig();
+        YamlConfiguration config = (YamlConfiguration) getWarpsConfig();
         String ownerStr = config.getString("warps." + name + ".owner");
 
         if (ownerStr == null) {
@@ -172,7 +250,7 @@ public final class Main extends JavaPlugin {
 
 
     public Location getLocation(String name) {
-        YamlConfiguration config = (YamlConfiguration) this.getConfig();
+        FileConfiguration config = getWarpsConfig();
 
         if (name.startsWith("spawn_")) {
             String spawnNumber = name.replace("spawn_", "");
@@ -205,13 +283,13 @@ public final class Main extends JavaPlugin {
     }
 
     public void deleteLocation(String name) {
-        YamlConfiguration config = (YamlConfiguration) this.getConfig();
+        YamlConfiguration config = (YamlConfiguration) getWarpsConfig();
         config.set("warps." + name, null);
-        saveConfig();
+        saveWarpsConfig();
     }
 
     public boolean warpExist(String name) {
-        YamlConfiguration config = (YamlConfiguration) getConfig();
+        YamlConfiguration config = (YamlConfiguration) getWarpsConfig();
 
         if (name.startsWith("spawn_")) {
             String spawnNumber = name.replace("spawn_", "");
@@ -222,7 +300,7 @@ public final class Main extends JavaPlugin {
     }
 
     public String getWarpList() {
-        YamlConfiguration config = (YamlConfiguration) getConfig();
+        YamlConfiguration config = (YamlConfiguration) getWarpsConfig();
         if (!config.contains("warps")) {
             return "нет варпов";
         }
@@ -230,7 +308,7 @@ public final class Main extends JavaPlugin {
     }
 
     public List<String> getAllWarpsForGUI() {
-        YamlConfiguration config = (YamlConfiguration) getConfig();
+        YamlConfiguration config = (YamlConfiguration) getWarpsConfig();
         List<String> allWarps = new ArrayList<>();
 
         if (config.contains("warps")) {
@@ -287,7 +365,7 @@ public final class Main extends JavaPlugin {
     }
 
     public String getWarpType(String name) {
-        YamlConfiguration config = (YamlConfiguration) getConfig();
+        YamlConfiguration config = (YamlConfiguration) getWarpsConfig();
 
         if (name.startsWith("spawn_")) {
             return "server";
